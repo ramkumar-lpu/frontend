@@ -11,8 +11,9 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../contexts/CartContext";
 
-// Preload the model from /public
-useGLTF.preload("/nikeShoes.glb");
+// Preload the model from jsDelivr CDN (free GitHub-backed CDN)
+const MODEL_URL = "https://cdn.jsdelivr.net/gh/ramkumar-lpu/shoe-assets@main/nikeShoes.glb";
+useGLTF.preload(MODEL_URL);
 
 // Lightweight Loader
 function Loader() {
@@ -73,7 +74,7 @@ function FallbackShoe({ colors }) {
 // 3D Model
 function ShoeModel({ colors, onModelReady }) {
   const group = useRef();
-  const gltf = useGLTF("/nikeShoes.glb");
+  const gltf = useGLTF(MODEL_URL);
   const scene = gltf?.scene;
   const materials = gltf?.materials ?? {};
 
