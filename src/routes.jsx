@@ -2,22 +2,49 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
-// Lazy load components
-const Login = lazy(() => import('./components/Login'));
-const Profile = lazy(() => import('./components/Profile'));
-const LandingPage = lazy(() => import('./components/LandingPage'));
-const Designer = lazy(() => import('./components/Designer'));
-const Cart = lazy(() => import('./components/Cart'));
-const Contact = lazy(() => import('./components/Contact'));
-const OTPVerification = lazy(() => import('./components/OTPVerification'));
-const Privacy = lazy(() => import('./components/PrivacyPolicy'));
-const Terms = lazy(() => import('./components/TermsOfService'));
-const MyDesigns = lazy(() => import('./components/my-designs'));
-const Suggestions = lazy(() => import('./components/Suggestions'));
+// Lazy load helper with retry logic
+const lazyLoadComponent = (importFunc) => {
+  return lazy(() =>
+    importFunc().catch(() => {
+      console.error('Failed to load chunk, reloading...');
+      return importFunc();
+    })
+  );
+};
+
+// Lazy load components with retry
+const Login = lazyLoadComponent(() => import('./components/Login'));
+const Profile = lazyLoadComponent(() => import('./components/Profile'));
+const LandingPage = lazyLoadComponent(() => import('./components/LandingPage'));
+const Designer = lazyLoadComponent(() => import('./components/Designer'));
+const Cart = lazyLoadComponent(() => import('./components/Cart'));
+const Contact = lazyLoadComponent(() => import('./components/Contact'));
+const OTPVerification = lazyLoadComponent(() => import('./components/OTPVerification'));
+const Privacy = lazyLoadComponent(() => import('./components/PrivacyPolicy'));
+const Terms = lazyLoadComponent(() => import('./components/TermsOfService'));
+const MyDesigns = lazyLoadComponent(() => import('./components/my-designs'));
+const Suggestions = lazyLoadComponent(() => import('./components/Suggestions'));
+
 // Loading spinner for routes
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-gray-50">
     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+  </div>
+);
+
+// Error fallback for Suspense
+const ErrorFallback = () => (
+  <div className="min-h-screen flex items-center justify-center bg-red-50">
+    <div className="text-center">
+      <h2 className="text-2xl font-bold text-red-600 mb-4">Something went wrong</h2>
+      <p className="text-gray-600 mb-4">Failed to load this page</p>
+      <button
+        onClick={() => window.location.reload()}
+        className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
+      >
+        Reload Page
+      </button>
+    </div>
   </div>
 );
 

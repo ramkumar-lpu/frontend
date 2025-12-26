@@ -208,7 +208,8 @@ const Login = ({ onLoginSuccess }) => {
   }, [signupForm, validateSignupForm, navigate]);
 
   const handleGoogleLogin = useCallback(() => {
-    window.location.href = '/api/auth/google';
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+    window.location.href = `${backendUrl}/api/auth/google`;
   }, []);
 
   const toggleForgotPassword = useCallback(() => {

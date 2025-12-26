@@ -1,5 +1,5 @@
 ﻿
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 // Remove BrowserRouter import from here
 import axios from 'axios';
 import { CartProvider } from './contexts/CartContext';
@@ -7,7 +7,7 @@ import Navbar from './components/Navbar';
 import ErrorBoundary from './components/ErrorBoundary';
 import AppRoutes from './routes'; // Make sure this is your routes file
 import Footer from './components/Footer'; // If you have a Footer component
-import './App.css';
+
 
 // Loading spinner for initial auth check
 const PageLoader = () => (
@@ -73,11 +73,13 @@ function App() {
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
           <Navbar user={user} onLogout={handleLogout} />
           <div className="pt-16">
-            <AppRoutes 
-              user={user} 
-              onLoginSuccess={handleLoginSuccess} 
-              updateUser={updateUser} 
-            />
+            <Suspense fallback={<PageLoader />}>
+              <AppRoutes 
+                user={user} 
+                onLoginSuccess={handleLoginSuccess} 
+                updateUser={updateUser} 
+              />
+            </Suspense>
           </div>
           <Footer />
         </div>
