@@ -90,6 +90,17 @@ const AppRoutes = ({ user, onLoginSuccess, updateUser }) => {
         />
         
         <Route
+          path="/dashboard"
+          element={
+            user ? (
+              <Profile user={user} updateUser={updateUser} />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        
+        <Route
           path="/designer"
           element={
             user ? (
