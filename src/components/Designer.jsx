@@ -11,8 +11,8 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../contexts/CartContext";
 
-// Preload the model from jsDelivr CDN (free GitHub-backed CDN)
-const MODEL_URL = "https://cdn.jsdelivr.net/gh/ramkumar-lpu/shoe-assets@main/nikeShoes.glb";
+// Preload the model from GitHub Releases (serves actual binary, not LFS pointer)
+const MODEL_URL = "https://github.com/ramkumar-lpu/shoe-assets/releases/download/v1.0.0/nikeShoes.glb";
 useGLTF.preload(MODEL_URL);
 
 // Lightweight Loader
