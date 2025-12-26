@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { Download, RefreshCw, Box, Send, Heart, Check, Star, User, AlertCircle } from 'lucide-react';
 
 const Suggestion = () => {
@@ -121,16 +122,12 @@ const handleSaveDesign = async () => {
       try {
         showToast("Uploading to cloud storage...", 'info');
         
-        const uploadRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/designs/upload-base64`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ base64Image: image })
+        const uploadRes = await axios.post('/api/designs/upload-base64', {
+          base64Image: image
         });
         
-        const uploadData = await uploadRes.json();
-        if (uploadRes.ok && uploadData.success) {
-          cloudinaryUrl = uploadData.imageUrl;
+        if (uploadRes.data.success) {
+          cloudinaryUrl = uploadRes.data.imageUrl;
           console.log('Uploaded to Cloudinary:', cloudinaryUrl);
         } else {
           console.warn('Cloudinary upload failed, using original image');
@@ -144,35 +141,21 @@ const handleSaveDesign = async () => {
     
     console.log('Saving design with URL:', cloudinaryUrl.substring(0, 100) + '...');
     
-    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/designs`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ 
-        name: prompt.substring(0, 50),
-        description: prompt,
-        imageUrl: cloudinaryUrl,
-        templateId: Date.now(),
-        price: 0,
-        customization: {
-          type: 'ai-generated',
-          prompt: prompt,
-          cloudinary: cloudinaryUrl !== image
-        }
-      }),
+    const res = await axios.post('/api/designs', {
+      name: prompt.substring(0, 50),
+      description: prompt,
+      imageUrl: cloudinaryUrl,
+      templateId: Date.now(),
+      price: 0,
+      customization: {
+        type: 'ai-generated',
+        prompt: prompt,
+        cloudinary: cloudinaryUrl !== image
+      }
     });
     
-    const data = await res.json();
-    
-    if (res.status === 401) {
-      setUser(null);
-      localStorage.removeItem('user');
-      showToast("Session expired. Please login again.", 'error');
-      return;
-    }
-    
-    if (res.ok && data.success) {
-      console.log('Design saved:', data.design);
+    if (res.data.success) {
+      console.log('Design saved:', res.data.design);
       setIsSaved(true);
       showToast("Design saved successfully! Redirecting to My Designs...", 'success');
       
@@ -215,12 +198,20 @@ const handleSaveDesign = async () => {
       
       setTimeout(() => setIsSaved(false), 5000);
     } else {
-      const errorMsg = data.errors ? data.errors.join(', ') : (data.message || "Failed to save design");
+      const errorMsg = res.data.errors ? res.data.errors.join(', ') : (res.data.message || "Failed to save design");
       showToast(errorMsg, 'error');
     }
   } catch (err) {
     console.error("Failed to save design", err);
-    showToast("Failed to save design. Please try again.", 'error');
+    
+    if (err.response?.status === 401) {
+      setUser(null);
+      localStorage.removeItem('user');
+      showToast("Session expired. Please login again.", 'error');
+      setTimeout(() => handleLogin(), 1000);
+    } else {
+      showToast(err.response?.data?.message || "Failed to save design. Please try again.", 'error');
+    }
   } finally {
     setSaving(false);
   }
