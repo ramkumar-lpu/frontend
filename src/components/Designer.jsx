@@ -644,4 +644,4 @@ function ShoeConfigurator({ user }) {
   );
 }
 
-export default ShoeConfigurator;
+export default React.memo(ShoeConfigurator);
