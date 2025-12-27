@@ -11,9 +11,8 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../contexts/CartContext";
 
-// Use raw.githack.com CDN for CORS-enabled access to GitHub files
-// Compressed: WebP textures + Draco meshes (~17MB)
-const MODEL_URL = "https://raw.githack.com/ramkumar-lpu/shoe-assets/main/nikeShoes-webp-draco.glb";
+// Load model from public folder (compressed WebP + Draco ~22MB)
+const MODEL_URL = "/nikeShoes.glb";
 useGLTF.preload(MODEL_URL);
 
 // Lightweight Loader
