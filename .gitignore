@@ -12,11 +12,6 @@ dist
 dist-ssr
 *.local
 
-# Large binary files
-*.glb
-*.gltf
-*.fbx
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
