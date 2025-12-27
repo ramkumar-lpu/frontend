@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
+import { saveUser, getUser, saveDesign, getDesigns } from '../utils/indexedDB';
 import { 
-  BarChart3, 
   Edit3,
   Share2,
   Bell,
@@ -107,17 +107,20 @@ const Profile = ({ user, updateUser }) => {
     if (notificationTimeoutRef.current) clearTimeout(notificationTimeoutRef.current);
   }, []);
 
-  // Fetch designs: API first, then localStorage (merge both, de-dupe)
+  // Fetch designs: API first, then IndexedDB (merge both, de-dupe)
   useEffect(() => {
     const fetchDesigns = async () => {
       setIsLoading(true);
       try {
-        // Check session auth
+        // Check session auth and refresh user data
         const authRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/user`, { credentials: 'include' });
         if (authRes.ok) {
           const authData = await authRes.json();
           if (authData.success && authData.user) {
-            localStorage.setItem('user', JSON.stringify(authData.user));
+            // Save to IndexedDB for persistence
+            await saveUser(authData.user);
+            updateUser(authData.user);
+            setEditForm(authData.user);
           }
         }
 
@@ -140,15 +143,11 @@ const Profile = ({ user, updateUser }) => {
           }
         }
 
-        // LocalStorage designs (Designer saves here)
+        // IndexedDB designs (Designer saves here)
         let localDesigns = [];
-        const saved = localStorage.getItem('savedShoeDesigns');
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          const filtered = user?._id || user?.id
-            ? parsed.filter(des => !des.userId || des.userId === (user._id || user.id))
-            : parsed;
-          localDesigns = filtered.map(d => ({
+        const savedDesigns = await getDesigns(user?._id || user?.id);
+        if (Array.isArray(savedDesigns) && savedDesigns.length > 0) {
+          localDesigns = savedDesigns.map(d => ({
             id: d.id,
             name: d.name,
             colors: d.colors || {},
@@ -183,17 +182,14 @@ const Profile = ({ user, updateUser }) => {
     fetchDesigns();
   }, [user, showNotificationMessage]);
 
-  // Keep in sync with localStorage changes
+  // Keep in sync with IndexedDB changes (when designs are saved from Designer)
   useEffect(() => {
-    const handleStorageChange = (e) => {
-      if (e.key === 'savedShoeDesigns') {
-        const saved = localStorage.getItem('savedShoeDesigns');
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          const filtered = user?._id || user?.id
-            ? parsed.filter(des => !des.userId || des.userId === (user._id || user.id))
-            : parsed;
-          const localDesigns = filtered.map(d => ({
+    const refreshDesigns = async () => {
+      try {
+        // Get fresh designs from IndexedDB
+        const savedDesigns = await getDesigns(user?._id || user?.id);
+        if (Array.isArray(savedDesigns) && savedDesigns.length > 0) {
+          const localDesigns = savedDesigns.map(d => ({
             id: d.id,
             name: d.name,
             colors: d.colors || {},
@@ -202,16 +198,29 @@ const Profile = ({ user, updateUser }) => {
             category: 'Custom Design',
             emoji: '👟'
           }));
+          
           // Merge with existing to keep API items
           const map = new Map();
           [...localDesigns, ...designs].forEach(d => {
             const key = d.id || `${d.name}-${d.createdAt}`;
             map.set(key, d);
           });
-          setDesigns(Array.from(map.values()));
+          setDesigns(Array.from(map.values()).sort((a, b) => {
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          }));
         }
+      } catch (error) {
+        console.error('Error syncing designs from IndexedDB:', error);
       }
     };
+
+    // Listen for storage changes (cross-tab sync)
+    const handleStorageChange = (e) => {
+      if (e.key === 'savedShoeDesigns' || e.key === 'user') {
+        refreshDesigns();
+      }
+    };
+
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [user, designs]);
@@ -338,6 +347,10 @@ const Profile = ({ user, updateUser }) => {
 
       const updatedUser = { ...user, profileImage: data.profilePictureUrl };
       await updateUser(updatedUser);
+      
+      // Save to IndexedDB for persistence (better than localStorage for large files)
+      await saveUser(updatedUser);
+      
       setEditForm(prev => ({ ...prev, profileImage: data.profilePictureUrl }));
       showNotificationMessage('Profile picture updated!', 'success');
 

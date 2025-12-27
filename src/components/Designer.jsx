@@ -10,6 +10,7 @@ import {
 } from "@react-three/drei";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../contexts/CartContext";
+import { saveDesign, getDesigns } from "../utils/indexedDB";
 
 // Load model from public folder (compressed WebP + Draco ~22MB)
 const MODEL_URL = "/nikeShoes.glb";
@@ -198,16 +199,25 @@ function ShoeConfigurator({ user }) {
     setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
   };
 
-  // Load saved designs
+  // Load saved designs from IndexedDB
   useEffect(() => {
-    const saved = localStorage.getItem("savedShoeDesigns");
-    if (saved) {
+    const loadDesigns = async () => {
       try {
-        setSavedDesigns(JSON.parse(saved));
+        const user = JSON.parse(sessionStorage.getItem('user') || localStorage.getItem('user') || '{}');
+        const userId = user?._id || user?.id;
+        
+        if (userId) {
+          const designs = await getDesigns(userId);
+          if (Array.isArray(designs)) {
+            setSavedDesigns(designs);
+          }
+        }
       } catch (e) {
         console.error("Error loading saved designs:", e);
       }
-    }
+    };
+    
+    loadDesigns();
   }, []);
 
   const updateColor = useCallback(
@@ -286,10 +296,23 @@ function ShoeConfigurator({ user }) {
       preview: preview,
     };
 
-    // 1. Save to localStorage (for offline/fallback)
+    // 1. Save to IndexedDB first (immediate persistence)
     const updatedLocal = [...savedDesigns, newDesign];
     setSavedDesigns(updatedLocal);
-    localStorage.setItem("savedShoeDesigns", JSON.stringify(updatedLocal));
+    
+    try {
+      await saveDesign({
+        id: designId,
+        name: designName.trim(),
+        colors: colors,
+        preview: preview,
+        userId: user?.id || user?._id || null,
+        createdAt: new Date().toISOString(),
+      });
+      console.log('Design saved to IndexedDB');
+    } catch (err) {
+      console.error('Error saving to IndexedDB:', err);
+    }
     
     let backendSuccess = false;
     let backendDesignId = null;
@@ -332,12 +355,23 @@ function ShoeConfigurator({ user }) {
           backendSuccess = true;
           backendDesignId = data.design._id;
           
-          // Update localStorage design with MongoDB _id for reference
+          // Update IndexedDB design with MongoDB _id for reference
           newDesign._id = data.design._id;
           const updatedWithId = updatedLocal.map(d => 
             d.id === designId ? { ...d, _id: data.design._id } : d
           );
-          localStorage.setItem("savedShoeDesigns", JSON.stringify(updatedWithId));
+          
+          // Update IndexedDB with the backend ID
+          await saveDesign({
+            id: designId,
+            name: designName.trim(),
+            colors: colors,
+            preview: preview,
+            userId: user?.id || user?._id || null,
+            createdAt: new Date().toISOString(),
+            _id: data.design._id
+          });
+          
           setSavedDesigns(updatedWithId);
         } else {
           console.warn('Backend save failed:', data.message);
