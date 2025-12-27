@@ -28,7 +28,6 @@ export const initDB = () => {
     request.onerror = () => reject(request.error);
     request.onsuccess = () => {
       db = request.result;
-      console.log('IndexedDB initialized successfully');
       resolve(db);
     };
 
@@ -68,7 +67,6 @@ export const saveUser = async (userData) => {
       const request = store.put(userData, 'currentUser');
       request.onerror = () => reject(request.error);
       request.onsuccess = () => {
-        console.log('User saved to IndexedDB:', userData.email);
         resolve(userData);
       };
     });
