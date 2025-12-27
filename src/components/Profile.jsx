@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { saveUser, getUser, saveDesign, getDesigns } from '../utils/indexedDB';
-import { 
+import {
   Edit3,
   Share2,
   Bell,
@@ -18,7 +18,8 @@ import {
   User,
   LogOut,
   ChevronRight,
-  Eye
+  Eye,
+  BarChart2
 } from 'lucide-react';
 
 const Profile = ({ user, updateUser }) => {
@@ -810,39 +811,6 @@ const TabNavigation = React.memo(({ tabs, activeTab, onTabChange }) => (
   </motion.div>
 ));
 TabNavigation.displayName = 'TabNavigation';
-
-// Designs tab
-// const DesignsTab = React.memo(({ designs, isLoading, onShare, onSelectDesign }) => (
-//   <motion.div key="designs" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="space-y-6">
-//     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-//       <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-//         My Designs {designs.length > 0 && `(${designs.length})`}
-//       </h2>
-//       <button
-//         onClick={() => window.location.href = '/designer'}
-//         className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:opacity-90 transition-opacity text-sm sm:text-base"
-//       >
-//         <Plus size={16} />
-//         New Design
-//       </button>
-//     </div>
-
-//     {isLoading ? (
-//       <div className="flex items-center justify-center py-16">
-//         <div className="animate-spin rounded-full h-10 w-10 border-4 border-blue-600 border-t-transparent" />
-//       </div>
-//     ) : designs.length === 0 ? (
-//       <EmptyDesignsState />
-//     ) : (
-//       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-//         {designs.map((design) => (
-//           <DesignCard key={design.id} design={design} onShare={onShare} onClick={() => onSelectDesign(design)} />
-//         ))}
-//       </div>
-//     )}
-//   </motion.div>
-// ));
-// ...existing code...
 const DesignsTab = React.memo(({ designs, isLoading, onShare, onSelectDesign }) => {
   const displayDesigns = designs.slice(0, 4); // show only first 4
   return (
@@ -1000,7 +968,7 @@ const StatsTab = React.memo(({ designStats, designs }) => {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <StatCard icon={<BarChart3 className="w-7 h-7 sm:w-8 sm:h-8" />} label="Total Designs" value={designStats.total} color="from-blue-500 to-cyan-500" subtitle={`${designStats.thisWeek} this week`} />
+            <StatCard icon={<BarChart2 className="w-7 h-7 sm:w-8 sm:h-8" />} label="Total Designs" value={designStats.total} color="from-blue-500 to-cyan-500" subtitle={`${designStats.thisWeek} this week`} />
             <StatCard icon={<Zap className="w-7 h-7 sm:w-8 sm:h-8" />} label="Avg per Week" value={avgPerWeek} color="from-purple-500 to-pink-500" subtitle="Design frequency" />
             <StatCard icon={<Calendar className="w-7 h-7 sm:w-8 sm:h-8" />} label="Days Active" value={timeStats.daysSinceFirst} color="from-green-500 to-emerald-500" subtitle={`Since ${timeStats.oldestDate}`} />
           </div>
