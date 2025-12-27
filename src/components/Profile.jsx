@@ -1097,28 +1097,6 @@ const SettingsTab = React.memo(({
         )}
       </div>
 
-      {/* Test route button */}
-      <div className="mt-4 pt-4 border-t border-gray-200">
-        <button
-          onClick={async () => {
-            try {
-              const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/profile/test`, {
-                credentials: 'include'
-              });
-              const data = await res.json();
-              console.log('Profile route test:', data);
-              alert(data.message || 'Test successful');
-            } catch (err) {
-              console.error('Test failed:', err);
-              alert('Test failed: ' + err.message);
-            }
-          }}
-          className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm"
-        >
-          Test Profile Route
-        </button>
-      </div>
-
       {/* Logout */}
       <div className="pt-6 border-t border-gray-200">
         <button onClick={onLogout} className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2">
