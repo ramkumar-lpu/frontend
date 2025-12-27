@@ -7,6 +7,7 @@ import Navbar from './components/Navbar';
 import ErrorBoundary from './components/ErrorBoundary';
 import AppRoutes from './routes'; // Make sure this is your routes file
 import Footer from './components/Footer'; // If you have a Footer component
+import { getUser, saveUser } from './utils/indexedDB';
 
 
 // Loading spinner for initial auth check
@@ -33,13 +34,38 @@ function App() {
       const response = await axios.get('/api/auth/user');
 
       if (response.data.success) {
-        setUser(response.data.user);
+        const apiUser = response.data.user;
+        
+        // Try to get user from IndexedDB to preserve profile picture
+        const indexedUser = await getUser();
+        
+        // Merge: API data is authoritative, but preserve profileImage from IndexedDB if missing from API
+        const mergedUser = {
+          ...apiUser,
+          profileImage: apiUser.profileImage || indexedUser?.profileImage
+        };
+        
+        // Save merged data back to IndexedDB
+        await saveUser(mergedUser);
+        
+        setUser(mergedUser);
       } else {
         setUser(null);
       }
     } catch (error) {
       console.error('Auth check failed:', error);
-      setUser(null);
+      
+      // Fallback: Try to load user from IndexedDB if API fails
+      try {
+        const cachedUser = await getUser();
+        if (cachedUser) {
+          console.log('Loaded user from IndexedDB cache');
+          setUser(cachedUser);
+        }
+      } catch (indexedDbError) {
+        console.error('Failed to load from IndexedDB:', indexedDbError);
+        setUser(null);
+      }
     } finally {
       setAuthChecked(true);
     }

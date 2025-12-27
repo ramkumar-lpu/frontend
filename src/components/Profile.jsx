@@ -107,6 +107,17 @@ const Profile = ({ user, updateUser }) => {
     if (notificationTimeoutRef.current) clearTimeout(notificationTimeoutRef.current);
   }, []);
 
+  // Sync editForm with user when user changes (preserve profileImage from IndexedDB)
+  useEffect(() => {
+    if (user) {
+      setEditForm(prev => ({
+        ...user,
+        // Preserve profileImage if it exists in either user or previous editForm
+        profileImage: user.profileImage || prev?.profileImage
+      }));
+    }
+  }, [user?.id, user?._id, user?.profileImage, user?.email]);
+
   // Fetch designs: API first, then IndexedDB (merge both, de-dupe)
   useEffect(() => {
     const fetchDesigns = async () => {
@@ -117,10 +128,17 @@ const Profile = ({ user, updateUser }) => {
         if (authRes.ok) {
           const authData = await authRes.json();
           if (authData.success && authData.user) {
-            // Save to IndexedDB for persistence
-            await saveUser(authData.user);
-            updateUser(authData.user);
-            setEditForm(authData.user);
+            // Get cached user from IndexedDB to preserve profileImage
+            const cachedUser = await getUser();
+            const mergedUser = {
+              ...authData.user,
+              profileImage: authData.user.profileImage || cachedUser?.profileImage
+            };
+            
+            // Save merged data to IndexedDB for persistence
+            await saveUser(mergedUser);
+            updateUser(mergedUser);
+            setEditForm(mergedUser);
           }
         }
 
