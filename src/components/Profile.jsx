@@ -245,11 +245,13 @@ const Profile = ({ user, updateUser }) => {
 
   // Stats
   const designStats = useMemo(() => {
-    const total = designs.length;
-    const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
-    const monthAgo = new Date(); monthAgo.setMonth(monthAgo.getMonth() - 1);
-    const thisWeek = designs.filter(d => new Date(d.createdAt) >= weekAgo).length;
-    const thisMonth = designs.filter(d => new Date(d.createdAt) >= monthAgo).length;
+    const total = designs?.length || 0;
+    const weekAgo = new Date(); 
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const monthAgo = new Date(); 
+    monthAgo.setMonth(monthAgo.getMonth() - 1);
+    const thisWeek = (designs || []).filter(d => d?.createdAt && new Date(d.createdAt) >= weekAgo).length;
+    const thisMonth = (designs || []).filter(d => d?.createdAt && new Date(d.createdAt) >= monthAgo).length;
     return { total, thisWeek, thisMonth };
   }, [designs]);
 
@@ -735,7 +737,7 @@ ProfileSidebar.displayName = 'ProfileSidebar';
 
 const QuickStat = ({ label, value }) => (
   <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 text-center border border-white/10 hover:bg-white/10 transition-colors">
-    <div className="text-xl sm:text-2xl font-bold mb-1">{value}</div>
+    <div className="text-xl sm:text-2xl font-bold mb-1">{value ?? 0}</div>
     <div className="text-xs text-gray-300">{label}</div>
   </div>
 );
@@ -962,15 +964,26 @@ DesignCard.displayName = 'DesignCard';
 // Stats tab
 const StatsTab = React.memo(({ designStats, designs }) => {
   const timeStats = useMemo(() => {
-    if (designs.length === 0) return { oldestDate: null, newestDate: null, daysSinceFirst: 0 };
-    const dates = designs.map(d => new Date(d.createdAt).getTime());
-    const oldest = Math.min(...dates);
-    const daysSinceFirst = Math.floor((Date.now() - oldest) / (1000 * 60 * 60 * 24));
-    return { oldestDate: new Date(oldest).toLocaleDateString(), daysSinceFirst };
+    if (!designs || designs.length === 0) return { oldestDate: null, newestDate: null, daysSinceFirst: 0 };
+    try {
+      const validDates = designs
+        .filter(d => d && d.createdAt)
+        .map(d => new Date(d.createdAt).getTime())
+        .filter(time => !isNaN(time));
+      
+      if (validDates.length === 0) return { oldestDate: null, newestDate: null, daysSinceFirst: 0 };
+      
+      const oldest = Math.min(...validDates);
+      const daysSinceFirst = Math.floor((Date.now() - oldest) / (1000 * 60 * 60 * 24));
+      return { oldestDate: new Date(oldest).toLocaleDateString(), daysSinceFirst };
+    } catch (error) {
+      console.error('Error calculating time stats:', error);
+      return { oldestDate: null, newestDate: null, daysSinceFirst: 0 };
+    }
   }, [designs]);
 
   const avgPerWeek = useMemo(() => {
-    if (designs.length === 0 || timeStats.daysSinceFirst === 0) return 0;
+    if (!designs || designs.length === 0 || !timeStats || timeStats.daysSinceFirst === 0) return 0;
     const weeks = Math.max(timeStats.daysSinceFirst / 7, 1);
     return (designs.length / weeks).toFixed(1);
   }, [designs.length, timeStats.daysSinceFirst]);
@@ -1010,9 +1023,9 @@ StatsTab.displayName = 'StatsTab';
 const StatCard = React.memo(({ icon, label, value, color, subtitle }) => (
   <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl p-5 sm:p-6 shadow-lg">
     <div className={`inline-flex p-3 rounded-xl bg-gradient-to-r ${color} text-white mb-4`}>{icon}</div>
-    <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">{value}</div>
+    <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">{value ?? 0}</div>
     <div className="text-gray-700 font-medium mb-1">{label}</div>
-    <div className="text-sm text-gray-500">{subtitle}</div>
+    <div className="text-sm text-gray-500">{subtitle ?? ''}</div>
   </motion.div>
 ));
 StatCard.displayName = 'StatCard';
@@ -1023,7 +1036,7 @@ const TimelineRow = ({ label, value, color }) => (
       <div className="font-medium text-gray-900">{label}</div>
       <div className="text-sm text-gray-600">Progress</div>
     </div>
-    <div className={`text-2xl font-bold text-${color}-600`}>{value}</div>
+    <div className={`text-2xl font-bold text-${color}-600`}>{value ?? 0}</div>
   </div>
 );
 
