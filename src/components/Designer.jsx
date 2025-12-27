@@ -1,4 +1,4 @@
-import React, { useState, Suspense, useRef, useEffect, useCallback } from "react";
+import React, { useState, Suspense, useRef, useEffect, useCallback, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import {
   useGLTF,
@@ -72,16 +72,22 @@ function FallbackShoe({ colors }) {
   );
 }
 
-// 3D Model
+// 3D Model - Optimized with useMemo and reduced updates
 function ShoeModel({ colors, onModelReady }) {
   const group = useRef();
   const gltf = useGLTF(MODEL_URL);
   const scene = gltf?.scene;
   const materials = gltf?.materials ?? {};
 
+  // Use useCallback ref to avoid unnecessary animations on mobile
+  const frameCountRef = useRef(0);
   useFrame((state) => {
     if (group.current && scene) {
-      group.current.rotation.y = Math.sin(state.clock.getElapsedTime() / 4) * 0.1;
+      // Skip frames on lower-end devices (animate every 2 frames instead of 1)
+      frameCountRef.current++;
+      if (frameCountRef.current % 2 === 0) {
+        group.current.rotation.y = Math.sin(state.clock.getElapsedTime() / 4) * 0.1;
+      }
     }
   });
 
@@ -97,6 +103,9 @@ function ShoeModel({ colors, onModelReady }) {
     return () => clearTimeout(timer);
   }, [scene, onModelReady]);
 
+  // Memoize color updates to prevent unnecessary material updates
+  const colorKey = useMemo(() => `${colors.body}-${colors.sole}-${colors.laces}-${colors.logo}`, [colors]);
+  
   useEffect(() => {
     if (!scene || !materials) return;
     try {
@@ -112,7 +121,7 @@ function ShoeModel({ colors, onModelReady }) {
     } catch (err) {
       console.warn("Material update failed:", err);
     }
-  }, [colors, materials, scene]);
+  }, [colorKey, materials, scene]);
 
   if (!scene) return <FallbackShoe colors={colors} />;
 
@@ -498,13 +507,22 @@ function ShoeConfigurator({ user }) {
       <section className="w-full lg:w-2/3 h-[55vh] lg:h-screen bg-gray-100 relative">
         <Canvas
           shadows
-          dpr={[1, 2]}
-          gl={{ preserveDrawingBuffer: true, antialias: true, alpha: false }}
-          onCreated={({ gl }) => gl.setClearColor("#e8e8e8")}
+          dpr={[1, 1.5]}
+          gl={{ 
+            preserveDrawingBuffer: false,
+            antialias: true, 
+            alpha: false,
+            powerPreference: 'high-performance'
+          }}
+          onCreated={({ gl }) => {
+            gl.setClearColor("#e8e8e8");
+            gl.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // Cap at 1.5x
+          }}
+          performance={{ min: 0.5, max: 1 }}
         >
           <PerspectiveCamera makeDefault position={[0, 0, 4]} fov={50} />
           <Suspense fallback={<Loader />}>
-            <Stage environment="city" intensity={0.6} contactShadow shadows>
+            <Stage environment="park" intensity={0.4} contactShadow={{ blur: 2, scale: 8 }} shadows>
               <ShoeModel colors={colors} onModelReady={setIs3DReady} />
             </Stage>
           </Suspense>
