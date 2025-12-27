@@ -43,7 +43,7 @@ const UniqueLandingPage = () => {
   ];
 
   return (
-    <div className="bg-[#050505] text-white selection:bg-white selection:text-black">
+    <div className="bg-[#050505] text-white selection:bg-white selection:text-black  mt-2">
 
       {/* HERO */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden">
