@@ -180,7 +180,7 @@ const Profile = ({ user, updateUser }) => {
     };
 
     fetchDesigns();
-  }, [user, showNotificationMessage]);
+  }, []); // Only fetch once on mount
 
   // Keep in sync with IndexedDB changes (when designs are saved from Designer)
   useEffect(() => {
@@ -223,7 +223,7 @@ const Profile = ({ user, updateUser }) => {
 
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, [user, designs]);
+  }, [user?.id, user?._id]); // Only depend on user ID, not designs
 
   // Stats
   const designStats = useMemo(() => {
